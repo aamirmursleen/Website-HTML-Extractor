@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Extract clean HTML from any website. Remove JavaScript, CSS, and scripts while preserving structure, titles, and meta descriptions.">
+    <title>Website HTML Extractor - Clean Code Extraction Tool</title>
+    <style>
+        :root {
+            --primary: #e50914;
+            --primary-hover: #f40612;
+            --secondary: #564d4d;
+            --dark: #141414;
+            --darker: #0b0b0b;
+            --light: #e5e5e5;
+            --success: #46d369;
+            --font: 'Netflix Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        @font-face {
+            font-family: 'Netflix Sans';
+            src: url('https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Rg.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: var(--font);
+            line-height: 1.6;
+            color: var(--light);
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark);
+        }
+        
+        h1, h2, h3 {
+            font-weight: 700;
+        }
+        
+        h1 {
+            color: var(--light);
+            text-align: center;
+            margin: 30px 0;
+            font-size: 2.5rem;
+        }
+        
+        .highlight {
+            color: var(--primary);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(to bottom, var(--darker), var(--dark));
+            border-bottom: 1px solid #333;
+        }
+        
+        .hero p {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .tool-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .section-card {
+            background-color: rgba(30, 30, 30, 0.95);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .section-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--light);
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-card h2 svg {
+            margin-right: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            background-color: #252525;
+            color: var(--light);
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+        
+        #outputContainer {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow: auto;
+            background-color: #252525;
+            color: var(--light);
+            white-space: pre-wrap;
+            font-size: 16px;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button svg {
+            margin-right: 8px;
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .copy-button {
+            background-color: var(--success);
+        }
+        
+        .copy-button:hover {
+            background-color: #3ab058;
+        }
+        
+        .secondary-button {
+            background-color: var(--secondary);
+        }
+        
+        .secondary-button:hover {
+            background-color: #655a5a;
+        }
+        
+        .clear-button {
+            background-color: transparent;
+            border: 1px solid #555;
+            color: var(--light);
+        }
+        
+        .clear-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--light);
+        }
+        
+        .status {
+            margin-top: 15px;
+            font-style: italic;
+            color: #bbb;
+            min-height: 25px;
+        }
+        
+        .metadata-display {
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            padding: 15px;
+        }
+        
+        .metadata-item {
+            margin-bottom: 10px;
+        }
+        
+        .metadata-item h3 {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .metadata-item p {
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-wrap: break-word;
+        }
+        
+        @media (max-width: 768px) {
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Website <span class="highlight">HTML Extractor</span></h1>
+        <p>Extract clean HTML code from any website. Remove JavaScript, CSS, and scripts while preserving structure, titles, and meta descriptions.</p>
+    </div>
+    
+    <div class="container">
+        <div class="tool-container">
+            <div class="section-card">
+                <h2>
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Input Website HTML
+                </h2>
+                <textarea id="inputHtml" placeholder="Paste website HTML source code here..."></textarea>
+                <div class="buttons">
+                    <button id="extractButton">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Extract HTML
+                    </button>
+                    <button id="clearInputButton" class="clear-button">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Clear Input
+                    </button>
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h2>
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Extracted Clean HTML
+                </h2>
+                <div id="outputContainer"></div>
+                
+                <div class="metadata-display">
+                    <h3>Website Metadata</h3>
+                    <div class="metadata-item">
+                        <h3>Title</h3>
+                        <p id="extractedTitle">Not extracted yet</p>
+                    </div>
+                    <div class="metadata-item">
+                        <h3>Meta Description</h3>
+                        <p id="extractedDescription">Not extracted yet</p>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button id="copyButton" class="copy-button">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copy to Clipboard
+                    </button>
+                    <button id="downloadButton" class="secondary-button">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download HTML
+                    </button>
+                    <button id="clearOutputButton" class="clear-button">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Clear Output
+                    </button>
+                </div>
+                <p class="status" id="status"></p>
+            </div>
+        </div>
+
+        <section class="section-card">
+            <h2>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                About This Tool
+            </h2>
+            <div class="about-content">
+                <p>The <strong>Website HTML Extractor</strong> allows you to extract clean HTML code from any website by removing JavaScript, CSS, and other non-essential elements while preserving the core HTML structure, including important metadata like titles and descriptions.</p>
+                
+                <h3>Features:</h3>
+                <ul>
+                    <li><strong>Clean Extraction:</strong> Removes all script tags, event handlers, and other potential security risks</li>
+                    <li><strong>CSS Removal:</strong> Eliminates all style tags, inline styles, and CSS links</li>
+                    <li><strong>Metadata Preservation:</strong> Extracts and displays important website metadata separately</li>
+                    <li><strong>One-Click Copy:</strong> Copy the cleaned HTML to your clipboard with one click</li>
+                    <li><strong>Download Option:</strong> Save the extracted HTML as a file for later use</li>
+                </ul>
+                
+                <h3>How to Use:</h3>
+                <ol>
+                    <li>Paste website HTML source code into the input field</li>
+                    <li>Click "Extract HTML" to process the code</li>
+                    <li>Review the extracted clean HTML and website metadata</li>
+                    <li>Copy or download the result for your projects</li>
+                </ol>
+                
+                <h3>Why Use This Tool?</h3>
+                <p>This extractor is perfect for web developers, designers, and content creators who need to analyze website structure, extract content for migrations, or create clean templates from existing websites without the bloat of scripts and styles.</p>
+                
+                <p><strong>Privacy Note:</strong> All processing happens directly in your browser. Your HTML is never sent to any server or stored anywhere else.</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputHtml = document.getElementById('inputHtml');
+            const outputContainer = document.getElementById('outputContainer');
+            const extractButton = document.getElementById('extractButton');
+            const copyButton = document.getElementById('copyButton');
+            const downloadButton = document.getElementById('downloadButton');
+            const clearInputButton = document.getElementById('clearInputButton');
+            const clearOutputButton = document.getElementById('clearOutputButton');
+            const status = document.getElementById('status');
+            const extractedTitle = document.getElementById('extractedTitle');
+            const extractedDescription = document.getElementById('extractedDescription');
+
+            // Add animation effects
+            const addPulseEffect = (element) => {
+                element.classList.add('pulse-animation');
+                setTimeout(() => {
+                    element.classList.remove('pulse-animation');
+                }, 1000);
+            };
+
+            // Extract HTML function
+            extractButton.addEventListener('click', function() {
+                const htmlSource = inputHtml.value;
+                if (!htmlSource.trim()) {
+                    status.textContent = 'Please enter some HTML source code first.';
+                    return;
+                }
+
+                try {
+                    // Add visual feedback for processing
+                    status.textContent = 'Processing...';
+                    addPulseEffect(extractButton);
+                    
+                    // Small delay to show processing state
+                    setTimeout(() => {
+                        // Create a new DOMParser
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlSource, 'text/html');
+
+                        // Extract metadata before cleaning
+                        const titleElement = doc.querySelector('title');
+                        const titleText = titleElement ? titleElement.textContent.trim() : 'No title found';
+                        extractedTitle.textContent = titleText;
+
+                        const metaDescription = doc.querySelector('meta[name="description"]');
+                        const descriptionText = metaDescription ? metaDescription.getAttribute('content') : 'No description found';
+                        extractedDescription.textContent = descriptionText;
+
+                        // Remove script tags
+                        const scripts = doc.querySelectorAll('script');
+                        scripts.forEach(script => script.remove());
+
+                        // Remove style tags
+                        const styles = doc.querySelectorAll('style');
+                        styles.forEach(style => style.remove());
+
+                        // Remove link tags that reference CSS
+                        const links = doc.querySelectorAll('link[rel="stylesheet"], link[href$=".css"]');
+                        links.forEach(link => link.remove());
+
+                        // Remove inline styles
+                        const elementsWithStyle = doc.querySelectorAll('[style]');
+                        elementsWithStyle.forEach(el => el.removeAttribute('style'));
+
+                        // Remove JavaScript event handlers (onclick, onload, etc.)
+                        const allElements = doc.querySelectorAll('*');
+                        allElements.forEach(el => {
+                            const attributes = el.attributes;
+                            for (let i = attributes.length - 1; i >= 0; i--) {
+                                const attrName = attributes[i].name.toLowerCase();
+                                if (attrName.startsWith('on')) {
+                                    el.removeAttribute(attributes[i].name);
+                                }
+                            }
+                        });
+                        
+                        // Get the cleaned HTML
+                        const cleanedHtml = doc.documentElement.outerHTML;
+                        
+                        // Format the HTML with proper indentation for better readability
+                        let formattedHtml = cleanedHtml;
+                        try {
+                            // Use a basic formatting approach
+                            formattedHtml = cleanedHtml
+                                .replace(/></g, '>\n<')
+                                .replace(/(<\/[^>]+>)/g, '$1\n')
+                                .replace(/(<[^\/][^>]*[^\/]>)/g, '$1\n');
+                        } catch (formatError) {
+                            console.warn('HTML formatting failed, using raw output instead');
+                        }
+                        
+                        // Display the result
+                        outputContainer.textContent = formattedHtml;
+                        status.textContent = 'HTML extracted successfully!';
+
+                        // Show success message with content stats
+                        const originalSize = new Blob([htmlSource]).size;
+                        const cleanedSize = new Blob([formattedHtml]).size;
+                        const reduction = Math.round((1 - (cleanedSize / originalSize)) * 100);
+                        
+                        setTimeout(() => {
+                            status.textContent = `HTML extracted successfully! Reduced by ${reduction}% (${(originalSize/1024).toFixed(1)}KB → ${(cleanedSize/1024).toFixed(1)}KB)`;
+                        }, 500);
+                    }, 300);
+                    
+                } catch (error) {
+                    status.textContent = 'Error: ' + error.message;
+                    console.error(error);
+                }
+            });
+
+            // Copy to clipboard function
+            copyButton.addEventListener('click', function() {
+                if (!outputContainer.textContent.trim()) {
+                    status.textContent = 'Nothing to copy!';
+                    return;
+                }
+
+                try {
+                    addPulseEffect(copyButton);
+                    navigator.clipboard.writeText(outputContainer.textContent)
+                        .then(() => {
+                            status.textContent = 'Copied to clipboard!';
+                            setTimeout(() => {
+                                status.textContent = '';
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            status.textContent = 'Error copying to clipboard: ' + err.message;
+                            console.error(err);
+                        });
+                } catch (error) {
+                    // Fallback for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = outputContainer.textContent;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    status.textContent = 'Copied to clipboard!';
+                    setTimeout(() => {
+                        status.textContent = '';
+                    }, 2000);
+                }
+            });
+
+            // Download HTML function
+            downloadButton.addEventListener('click', function() {
+                if (!outputContainer.textContent.trim()) {
+                    status.textContent = 'Nothing to download!';
+                    return;
+                }
+
+                addPulseEffect(downloadButton);
+                const blob = new Blob([outputContainer.textContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Use extracted title for filename if available
+                const titleText = extractedTitle.textContent;
+                const filename = titleText && titleText !== 'No title found' 
+                    ? titleText.toLowerCase().replace(/[^a-z0-9]/gi, '_').substr(0, 30) + '.html'
+                    : 'extracted_website.html';
+                    
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                status.textContent = `HTML downloaded as "${filename}"!`;
+                setTimeout(() => {
+                    status.textContent = '';
+                }, 2000);
+            });
+
+            // Clear input function
+            clearInputButton.addEventListener('click', function() {
+                addPulseEffect(clearInputButton);
+                inputHtml.value = '';
+                status.textContent = 'Input cleared!';
+                setTimeout(() => {
+                    status.textContent = '';
+                }, 2000);
+            });
+
+            // Clear output function
+            clearOutputButton.addEventListener('click', function() {
+                addPulseEffect(clearOutputButton);
+                outputContainer.textContent = '';
+                extractedTitle.textContent = 'Not extracted yet';
+                extractedDescription.textContent = 'Not extracted yet';
+                status.textContent = 'Output cleared!';
+                setTimeout(() => {
+                    status.textContent = '';
+                }, 2000);
+            });
+
+            // Add pulse animation style
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                    100% { transform: scale(1); }
+                }
+                .pulse-animation {
+                    animation: pulse 0.5s ease-in-out;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Check if there's text in clipboard and offer to paste it
+            navigator.clipboard?.readText?.()
+                .then(text => {
+                    if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
+                        const pasteButton = document.createElement('button');
+                        pasteButton.innerHTML = `
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Paste from Clipboard
+                        `;
+                        pasteButton.className = 'secondary-button';
+                        document.querySelector('.tool-container .section-card:first-child .buttons').appendChild(pasteButton);
+                        
+                        pasteButton.addEventListener('click', function() {
+                            addPulseEffect(pasteButton);
+                            inputHtml.value = text;
+                            status.textContent = 'HTML pasted from clipboard!';
+                            setTimeout(() => {
+                                status.textContent = '';
+                            }, 2000);
+                        });
+                    }
+                })
+                .catch(() => {
+                    // Reading clipboard might be blocked, just ignore
+                });
+        });
+    </script>
+</body>
+</html>
